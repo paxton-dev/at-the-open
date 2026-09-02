@@ -1,0 +1,78 @@
+.page {
+  display: grid;
+  min-height: 100svh;
+  grid-template-columns: minmax(0, 1.05fr) minmax(24rem, 0.95fr);
+}
+
+.story {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background: var(--paper);
+  color: var(--ink);
+  padding: clamp(2rem, 6vw, 4.5rem);
+}
+
+.story h2 {
+  margin: 0;
+  font-family: var(--font-display), serif;
+  font-size: clamp(4.5rem, 9vw, 9rem);
+  font-weight: 400;
+  letter-spacing: -0.05em;
+  line-height: 0.82;
+}
+
+.story p {
+  max-width: 31rem;
+  margin: 2rem 0 0;
+  color: #4f4e49;
+  font-size: clamp(0.95rem, 1.5vw, 1.15rem);
+  line-height: 1.6;
+}
+
+.disclaimer {
+  color: #65645e;
+  font-family: var(--font-mono), monospace;
+  font-size: 0.58rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.formPanel {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: clamp(2rem, 7vw, 5rem);
+}
+
+.switchMode {
+  width: 100%;
+  max-width: 27.5rem;
+  margin: 1.5rem auto 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.switchMode a {
+  color: var(--paper);
+  text-underline-offset: 4px;
+}
+
+@media (max-width: 800px) {
+  .page {
+    grid-template-columns: 1fr;
+  }
+
+  .story {
+    min-height: 22rem;
+    gap: 4rem;
+  }
+
+  .story h2 {
+    font-size: clamp(4rem, 16vw, 7rem);
+  }
+
+  .formPanel {
+    min-height: 34rem;
+  }
+}
