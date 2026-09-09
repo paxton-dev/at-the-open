@@ -1,8 +1,7 @@
-import { Pool as NeonPool, neonConfig } from "@neondatabase/serverless";
+import { Pool as NeonPool } from "@neondatabase/serverless";
 import { drizzle as neonDrizzle } from "drizzle-orm/neon-serverless";
 import { drizzle as nodePostgresDrizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
-import ws from "ws";
 
 import * as schema from "@/db/schema";
 import { config } from "@/lib/config";
@@ -18,8 +17,6 @@ function createDatabase() {
 
     return nodePostgresDrizzle({ client: pool, schema });
   }
-
-  neonConfig.webSocketConstructor = ws;
 
   const pool = new NeonPool({
     connectionString: config.databaseUrl,
