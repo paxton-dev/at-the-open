@@ -32,8 +32,7 @@ infrastructure as code.
 | Production URL | `https://open.jamespaxton.io` |
 | Tests | Vitest for domain code; Playwright for the full user journey |
 
-The custom domain and CloudFront are complementary, not competing deployment
-choices. Visitors use `open.jamespaxton.io`; DNS sends that traffic to the
+Visitors use `open.jamespaxton.io`; DNS sends that traffic to the
 CloudFront distribution managed by SST.
 
 See [docs/architecture.md](docs/architecture.md) for boundaries, request flows,
