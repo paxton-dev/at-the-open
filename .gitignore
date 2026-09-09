@@ -12,6 +12,7 @@
 
 # next.js
 /.next/
+/.open-next/
 /out/
 /.sst/
 
@@ -41,3 +42,4 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+sst-env.d.ts
