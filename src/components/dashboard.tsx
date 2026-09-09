@@ -10,7 +10,7 @@ import {
   useState,
 } from "react";
 
-import { Brand } from "@/components/brand";
+import { SiteHeader } from "@/components/site-header";
 import { authClient } from "@/lib/auth-client";
 import type { StockSymbol } from "@/lib/stocks/types";
 
@@ -52,8 +52,13 @@ export function Dashboard({ userName, initialRecent }: DashboardProps) {
   const [recent, setRecent] = useState(initialRecent);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [activeSelection, setActiveSelection] = useState<StockSymbol | null>(
+    null,
+  );
 
-  async function handleSearch(symbol: string) {
+  async function handleSearch(selection: StockSymbol) {
+    const symbol = selection.symbol;
+    setActiveSelection(selection);
     setPending(true);
     setError(null);
 
@@ -105,66 +110,57 @@ export function Dashboard({ userName, initialRecent }: DashboardProps) {
 
   return (
     <main id="main-content" className={styles.page}>
-      <header className={styles.header}>
-        <Brand />
+      <SiteHeader>
         <div className={styles.account}>
           <span>Signed in as {firstName(userName)}</span>
           <button type="button" onClick={handleSignOut}>
             Log out
           </button>
         </div>
-      </header>
+      </SiteHeader>
 
-      <div className={styles.content}>
-        <div className={styles.workspace}>
-          <section>
-            <p className={styles.kicker}>01 — Stock lookup / US equities</p>
-            <h1>
-              Where did
-              <br />
-              the day
-              <br />
-              <em>begin?</em>
-            </h1>
-
-            <SymbolCombobox pending={pending} onSearch={handleSearch} />
-          </section>
-
-          {pending || error || quote ? (
-            <section className={styles.resultRegion} aria-live="polite">
-              {pending ? <LoadingState /> : null}
-              {!pending && error ? <ErrorState message={error} /> : null}
-              {!pending && !error && quote ? <QuoteResult quote={quote} /> : null}
-            </section>
+      <section className={styles.workspace} aria-live="polite">
+        <div className={styles.takeover}>
+          {pending ? (
+            <LoadingState symbol={activeSelection?.displaySymbol ?? ""} />
           ) : null}
+          {!pending && error ? <ErrorState message={error} /> : null}
+          {!pending && !error && quote ? (
+            <QuoteResult
+              quote={quote}
+              companyName={activeSelection?.description}
+            />
+          ) : null}
+          {!pending && !error && !quote ? <IdleState /> : null}
+
+          <SymbolCombobox pending={pending} onSearch={handleSearch} />
+        </div>
+      </section>
+
+      <section className={styles.recent} aria-labelledby="recent-title">
+        <div className={styles.sectionHeading}>
+          <h2 id="recent-title">Recent opens</h2>
+          <span>{recent.length} saved searches</span>
         </div>
 
-        <section className={styles.recent} aria-labelledby="recent-title">
-          <div className={styles.sectionHeading}>
-            <h2 id="recent-title">02 — Recent opens</h2>
-            <span>{recent.length} saved searches</span>
+        {recent.length ? (
+          <div className={styles.history}>
+            {recent.map((search) => (
+              <div className={styles.historyItem} key={search.id}>
+                <strong>{search.symbol}</strong>
+                <b>{formatCurrency(search.openingPrice)}</b>
+                <time dateTime={search.searchedAt}>
+                  {formatRelativeDate(search.searchedAt)}
+                </time>
+              </div>
+            ))}
           </div>
-
-          {recent.length ? (
-            <div className={styles.history}>
-              {recent.map((search) => (
-                <div className={styles.historyRow} key={search.id}>
-                  <strong>{search.symbol}</strong>
-                  <span>Latest reported session</span>
-                  <b>{formatCurrency(search.openingPrice)}</b>
-                  <time dateTime={search.searchedAt}>
-                    {formatRelativeDate(search.searchedAt)}
-                  </time>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className={styles.noHistory}>
-              Your successful searches will appear here.
-            </p>
-          )}
-        </section>
-      </div>
+        ) : (
+          <p className={styles.noHistory}>
+            Successful searches will appear here.
+          </p>
+        )}
+      </section>
 
       <footer className={styles.footer}>
         <span>Data by Finnhub</span>
@@ -176,7 +172,7 @@ export function Dashboard({ userName, initialRecent }: DashboardProps) {
 
 type SymbolComboboxProps = {
   pending: boolean;
-  onSearch: (symbol: string) => Promise<void>;
+  onSearch: (symbol: StockSymbol) => Promise<void>;
 };
 
 function SymbolCombobox({ pending, onSearch }: SymbolComboboxProps) {
@@ -294,7 +290,7 @@ function SymbolCombobox({ pending, onSearch }: SymbolComboboxProps) {
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (selected && !pending) void onSearch(selected.symbol);
+    if (selected && !pending) void onSearch(selected);
   }
 
   const activeOptionId =
@@ -308,6 +304,9 @@ function SymbolCombobox({ pending, onSearch }: SymbolComboboxProps) {
         <label className="srOnly" htmlFor="symbol">
           Stock symbol or company
         </label>
+        <span className={styles.prompt} aria-hidden="true">
+          ›
+        </span>
         <input
           id="symbol"
           type="text"
@@ -340,7 +339,7 @@ function SymbolCombobox({ pending, onSearch }: SymbolComboboxProps) {
           disabled={pending || !selected}
           aria-label="Check the open"
         >
-          {pending ? <span className={styles.spinner} /> : "→"}
+          {pending ? <span className={styles.spinner} /> : "Enter ↵"}
         </button>
       </form>
 
@@ -399,24 +398,52 @@ function SymbolCombobox({ pending, onSearch }: SymbolComboboxProps) {
   );
 }
 
-function QuoteResult({ quote }: { quote: DisplayQuote }) {
+function IdleState() {
+  return (
+    <div className={styles.idleState}>
+      <p className={styles.stateKicker}>Stock lookup · US equities</p>
+      <h1>
+        Where did the day <span>begin?</span>
+      </h1>
+      <p className={styles.stateCopy}>
+        Search a symbol and the opening price appears here—the latest reported
+        session, one clear number.
+      </p>
+    </div>
+  );
+}
+
+function QuoteResult({
+  quote,
+  companyName,
+}: {
+  quote: DisplayQuote;
+  companyName?: string;
+}) {
+  const price = formatPriceParts(quote.openingPrice);
+
   return (
     <div className={styles.result}>
-      <div className={styles.resultHeading}>
-        <div>
-          <p>Opening price</p>
-          <h2>{quote.symbol}</h2>
-        </div>
-        <span className={styles.status}>
-          <i /> Latest session
-        </span>
-      </div>
-      <strong className={styles.price}>{formatCurrency(quote.openingPrice)}</strong>
-      <p className={styles.timestamp}>
-        US equity · USD
+      <p className={styles.sessionLine}>
+        <span /> Latest session
         {quote.providerTimestamp
-          ? ` · Reported ${formatTimestamp(quote.providerTimestamp)}`
+          ? ` · ${formatTimestamp(quote.providerTimestamp)}`
           : ""}
+        <span />
+      </p>
+      <h2>
+        {quote.symbol}
+        {companyName ? ` — ${companyName}` : ""}
+      </h2>
+      <strong
+        className={styles.price}
+        aria-label={formatCurrency(quote.openingPrice)}
+      >
+        {price.whole}
+        <span>{price.decimal}</span>
+      </strong>
+      <p className={styles.timestamp}>
+        Opening price · US equity · USD
       </p>
       <dl className={styles.metrics}>
         <div><dt>Current</dt><dd>{formatCurrency(quote.currentPrice)}</dd></div>
@@ -428,22 +455,45 @@ function QuoteResult({ quote }: { quote: DisplayQuote }) {
   );
 }
 
-function LoadingState() {
+function LoadingState({ symbol }: { symbol: string }) {
   return (
-    <div className={styles.state}>
-      <div><p>Checking the market</p><strong>···</strong></div>
-      <span>Retrieving the latest reported session from Finnhub.</span>
+    <div className={styles.loadingState} role="status">
+      <p className={styles.sessionLine}>
+        <span /> Fetching the open… <span />
+      </p>
+      <strong className={styles.pendingSymbol}>{symbol}</strong>
+      <span className={styles.loadingBlock} />
     </div>
   );
 }
 
 function ErrorState({ message }: { message: string }) {
   return (
-    <div className={`${styles.state} ${styles.error}`} role="alert">
-      <div><p>Couldn&apos;t retrieve quote</p><strong>?</strong></div>
-      <span>{message} Your recent opens were not changed.</span>
+    <div className={styles.errorState} role="alert">
+      <p className={styles.errorKicker}>
+        <span /> Couldn&apos;t retrieve quote <span />
+      </p>
+      <h2>The open is unavailable</h2>
+      <p>{message} Your recent opens were not changed.</p>
     </div>
   );
+}
+
+function formatPriceParts(value: number) {
+  const formatted = new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 4,
+  }).format(value);
+  const decimalIndex = formatted.indexOf(".");
+
+  return decimalIndex === -1
+    ? { whole: formatted, decimal: "" }
+    : {
+        whole: formatted.slice(0, decimalIndex),
+        decimal: formatted.slice(decimalIndex),
+      };
 }
 
 function formatCurrency(value: number) {
