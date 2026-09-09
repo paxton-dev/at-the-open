@@ -1,0 +1,77 @@
+name: Deploy production
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment:
+      name: production
+      url: https://open.jamespaxton.io
+    env:
+      AWS_REGION: us-east-1
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      SST_CERTIFICATE_ARN: ${{ vars.SST_CERTIFICATE_ARN }}
+      SST_TELEMETRY_DISABLED: "1"
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Assume production deployment role
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          role-session-name: at-the-open-production
+          aws-region: ${{ env.AWS_REGION }}
+          allowed-account-ids: "493387716836"
+
+      - name: Verify production certificate
+        run: |
+          status="$(aws acm describe-certificate \
+            --certificate-arn "$SST_CERTIFICATE_ARN" \
+            --region "$AWS_REGION" \
+            --query 'Certificate.Status' \
+            --output text)"
+          if [[ "$status" != "ISSUED" ]]; then
+            echo "::error::Production certificate is $status; expected ISSUED."
+            exit 1
+          fi
+
+      - name: Install SST providers
+        run: npx sst install
+
+      - name: Apply production database migrations
+        run: npm run db:migrate
+
+      - name: Configure production secrets
+        env:
+          DATABASE_URL_SECRET: ${{ secrets.DATABASE_URL }}
+          AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
+          FINNHUB_KEY: ${{ secrets.FINNHUB_API_KEY }}
+        run: |
+          npx sst secret set DatabaseUrl "$DATABASE_URL_SECRET" --stage production
+          npx sst secret set AuthSecret "$AUTH_SECRET" --stage production
+          npx sst secret set FinnhubApiKey "$FINNHUB_KEY" --stage production
+
+      - name: Deploy production
+        run: npm run deploy:aws

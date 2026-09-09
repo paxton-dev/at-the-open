@@ -91,7 +91,12 @@ first deploy:
    npx sst secret set FinnhubApiKey "<finnhub-key>" --stage production
    ```
 
-4. Deploy with the certificate ARN available only to the infrastructure process:
+4. Run the **Deploy production** workflow from GitHub Actions. It uses the
+   protected `production` environment and assumes the scoped AWS role through
+   OIDC; no long-lived AWS access keys are stored in GitHub.
+
+   For a local fallback, deploy with the certificate ARN available only to the
+   infrastructure process:
 
    ```bash
    SST_CERTIFICATE_ARN="<certificate-arn>" npm run deploy:aws
