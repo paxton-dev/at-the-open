@@ -1,5 +1,9 @@
+import { Resource } from "sst/resource";
+
 const localDatabaseUrl =
   "postgresql://postgres:postgres@localhost:5432/at_the_open";
+
+type LinkedSecretName = "DatabaseUrl" | "AuthSecret" | "FinnhubApiKey";
 
 export const config = {
   databaseUrl:
@@ -40,16 +44,16 @@ export function assertExternalServicesConfigured() {
   }
 }
 
-function linkedSecret(name: string) {
+function linkedSecret(name: LinkedSecretName) {
   try {
-    // SST exposes linked secrets through process.env as JSON under SST_RESOURCE_App.
-    // The dynamic lookup keeps ordinary `next dev` and test runs independent of SST.
-    const resourceKey = `SST_RESOURCE_${name}`;
-    const value = process.env[resourceKey];
-    if (!value) return undefined;
-
-    const parsed = JSON.parse(value) as { value?: unknown };
-    return typeof parsed.value === "string" ? parsed.value : undefined;
+    // SST decrypts linked secrets at runtime; direct environment variables remain
+    // the fallback for ordinary `next dev` and test runs outside SST.
+    const resources = Resource as unknown as Record<
+      LinkedSecretName,
+      { value?: unknown } | undefined
+    >;
+    const value = resources[name]?.value;
+    return typeof value === "string" ? value : undefined;
   } catch {
     return undefined;
   }
