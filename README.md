@@ -116,16 +116,19 @@ runtime and never embedded in the browser bundle.
 
 ### Product capabilities
 
-- Add verified-email password recovery and authenticated password changes.
-- Let users delete individual recent searches or clear their full history with
-  confirmation.
-- Compare opening prices and session metrics for multiple symbols in one view.
-- Add historical opening-price trends with accessible chart and table views.
+- **Clear search history:** delete individual recent searches or clear the full
+  history with confirmation.
+- **Forgot, reset, and change password:** add verified-email password recovery
+  and authenticated password changes.
+- **Multiple-symbol search and comparison:** search several symbols and compare
+  their opening prices and session metrics in one view.
+- **Historical trends and visualizations:** chart opening-price changes over time
+  and provide an equivalent accessible table view.
+- **Email notifications:** let users subscribe to opening-price trend alerts or
+  digests, with configurable thresholds, pause, and unsubscribe controls.
 - Let users create watchlists and pin frequently researched symbols.
 - Add market context such as the opening gap versus previous close, session date,
   exchange, and data-freshness indicators.
-- Support configurable email alerts or digests for opening-price changes over
-  time, with pause and unsubscribe controls.
 - Export a user's search history or comparison results as CSV.
 
 ### Platform evolution
