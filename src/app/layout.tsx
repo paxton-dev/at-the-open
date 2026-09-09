@@ -1,23 +1,19 @@
 import type { Metadata } from "next";
-import { Instrument_Serif, Space_Grotesk, Space_Mono } from "next/font/google";
+import { Archivo, IBM_Plex_Mono } from "next/font/google";
 
 import "./globals.css";
 
-const display = Instrument_Serif({
-  variable: "--font-display",
+const archivo = Archivo({
+  variable: "--font-archivo",
   subsets: ["latin"],
-  weight: "400",
+  weight: "variable",
+  axes: ["wdth"],
 });
 
-const sans = Space_Grotesk({
-  variable: "--font-sans",
-  subsets: ["latin"],
-});
-
-const mono = Space_Mono({
+const mono = IBM_Plex_Mono({
   variable: "--font-mono",
   subsets: ["latin"],
-  weight: ["400", "700"],
+  weight: ["400", "500"],
 });
 
 export const metadata: Metadata = {
@@ -36,7 +32,7 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" data-scroll-behavior="smooth">
-      <body className={`${display.variable} ${sans.variable} ${mono.variable}`}>
+      <body className={`${archivo.variable} ${mono.variable}`}>
         <a className="skipLink" href="#main-content">
           Skip to main content
         </a>

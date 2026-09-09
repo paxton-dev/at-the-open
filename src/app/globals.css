@@ -1,15 +1,17 @@
 :root {
-  --ink: #131312;
-  --surface: #1c1c1a;
-  --surface-raised: #242421;
-  --paper: #f2efe9;
-  --muted: #aaa89f;
-  --dim: #74736c;
-  --signal: #8fd19e;
+  --ink: #0b0e0c;
+  --surface: #10140f;
+  --surface-raised: #141a16;
+  --paper: #e8ede9;
+  --muted: #8d978f;
+  --dim: #5d675f;
+  --placeholder: #4d564f;
+  --signal: #7fe0a7;
   --warning: #f2cc8f;
-  --error: #e88970;
-  --rule: rgba(242, 239, 233, 0.16);
-  --content-width: 88rem;
+  --error: #e8917a;
+  --rule: #1c231e;
+  --rule-strong: #273229;
+  --content-width: 96rem;
 }
 
 * {
@@ -18,7 +20,8 @@
 
 html {
   min-width: 320px;
-  background: var(--ink);
+  background:
+    radial-gradient(90% 70% at 50% 0%, #101512 0%, var(--ink) 70%) fixed;
   scroll-behavior: smooth;
 }
 
@@ -27,7 +30,7 @@ body {
   margin: 0;
   background: var(--ink);
   color: var(--paper);
-  font-family: var(--font-sans), sans-serif;
+  font-family: var(--font-archivo), sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -35,6 +38,10 @@ body {
 button,
 input {
   font: inherit;
+}
+
+button {
+  border-radius: 0;
 }
 
 button,
@@ -62,7 +69,7 @@ a {
   top: 1rem;
   left: 1rem;
   transform: translateY(-200%);
-  border-radius: 999px;
+  border-radius: 4px;
   background: var(--paper);
   color: var(--ink);
   padding: 0.75rem 1rem;

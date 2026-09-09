@@ -1,0 +1,21 @@
+.header {
+  display: flex;
+  min-height: 73px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  border-bottom: 1px solid var(--rule);
+  padding: 0 clamp(1.25rem, 3vw, 2.25rem);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: clamp(1rem, 2.2vw, 1.65rem);
+}
+
+@media (max-width: 520px) {
+  .header {
+    min-height: 66px;
+  }
+}

@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { Brand } from "@/components/brand";
+import { SiteHeader } from "@/components/site-header";
 
 import styles from "./page.module.css";
 
@@ -18,8 +18,7 @@ const exampleStocks = [
 export default function HomePage() {
   return (
     <main id="main-content" className={styles.page}>
-      <header className={styles.header}>
-        <Brand />
+      <SiteHeader>
         <nav className={styles.nav} aria-label="Account">
           <Link className={styles.textLink} href="/sign-in">
             Sign in
@@ -28,27 +27,22 @@ export default function HomePage() {
             Create account <span aria-hidden="true">→</span>
           </Link>
         </nav>
-      </header>
+      </SiteHeader>
 
       <section className={styles.hero}>
-        <div>
-          <p className={styles.eyebrow}>Market data / One clear answer</p>
-          <h1>
-            Where did
-            <br />
-            the day <em>begin?</em>
-          </h1>
-        </div>
-
-        <div className={styles.heroFooter}>
-          <p>
-            Look up the latest reported opening price for a US stock and keep a
-            private record of the symbols you research.
-          </p>
-          <Link className={styles.primaryAction} href="/sign-up">
-            Check the open <span aria-hidden="true">→</span>
-          </Link>
-        </div>
+        <p className={styles.eyebrow}>Opening prices without the noise</p>
+        <h1>
+          Where the market
+          <br />
+          day <span>began.</span>
+        </h1>
+        <p className={styles.summary}>
+          Look up the latest reported opening price for any US stock and keep a
+          private record of the symbols you research.
+        </p>
+        <Link className={styles.primaryAction} href="/sign-up">
+          Check the open <span aria-hidden="true">→</span>
+        </Link>
       </section>
 
       <section className={styles.tape} aria-label="Example opening prices">
@@ -69,12 +63,11 @@ export default function HomePage() {
             </div>
           ))}
         </div>
-        <span className={styles.tapeLabel}>Illustrative prices</span>
       </section>
 
       <footer className={styles.footer}>
-        <span>Opening prices without the noise.</span>
-        <span>Data by Finnhub · Informational use only</span>
+        <span>Data by Finnhub</span>
+        <span>Illustrative prices · Informational use only</span>
       </footer>
     </main>
   );

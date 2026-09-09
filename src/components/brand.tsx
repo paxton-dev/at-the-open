@@ -2,18 +2,14 @@ import Link from "next/link";
 
 import styles from "./brand.module.css";
 
-type BrandProps = {
-  dark?: boolean;
-};
-
-export function Brand({ dark = false }: BrandProps) {
+export function Brand() {
   return (
     <Link
-      className={`${styles.brand} ${dark ? styles.dark : ""}`}
+      className={styles.brand}
       href="/"
       aria-label="At The Open home"
     >
-      AT THE OPEN<span>✦</span>
+      AT THE OPEN
     </Link>
   );
 }

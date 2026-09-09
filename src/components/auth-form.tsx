@@ -54,17 +54,21 @@ export function AuthForm({ mode }: AuthFormProps) {
   return (
     <form className={styles.form} method="post" onSubmit={handleSubmit}>
       <p className={styles.kicker}>
-        {isSignUp ? "Your first open" : "Welcome back"}
+        {isSignUp ? "Get started" : "Welcome back"}
       </p>
       <h1>{isSignUp ? "Create account" : "Sign in"}</h1>
+      <p className={styles.intro}>
+        A focused record of where the market day started—saved to your account
+        and ready when you return.
+      </p>
 
       {isSignUp ? (
         <label className={styles.field}>
-          <span>Name</span>
+          <span>Your name</span>
           <input
             name="name"
             type="text"
-            placeholder="James King"
+            placeholder="First name is fine"
             autoComplete="name"
             maxLength={80}
             required
