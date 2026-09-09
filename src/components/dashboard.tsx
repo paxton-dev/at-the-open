@@ -1,10 +1,18 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
+import {
+  ChangeEvent,
+  FormEvent,
+  KeyboardEvent,
+  useEffect,
+  useId,
+  useState,
+} from "react";
 
 import { Brand } from "@/components/brand";
 import { authClient } from "@/lib/auth-client";
+import type { StockSymbol } from "@/lib/stocks/types";
 
 import styles from "./dashboard.module.css";
 
@@ -36,6 +44,8 @@ type DashboardProps = {
   initialRecent: RecentSearch[];
 };
 
+const symbolSearchCache = new Map<string, StockSymbol[]>();
+
 export function Dashboard({ userName, initialRecent }: DashboardProps) {
   const router = useRouter();
   const [quote, setQuote] = useState<DisplayQuote | null>(null);
@@ -43,11 +53,7 @@ export function Dashboard({ userName, initialRecent }: DashboardProps) {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
-  async function handleSearch(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    const symbol = String(form.get("symbol") ?? "");
-
+  async function handleSearch(symbol: string) {
     setPending(true);
     setError(null);
 
@@ -121,34 +127,16 @@ export function Dashboard({ userName, initialRecent }: DashboardProps) {
               <em>begin?</em>
             </h1>
 
-            <form className={styles.search} onSubmit={handleSearch}>
-              <label className="srOnly" htmlFor="symbol">
-                Stock symbol
-              </label>
-              <input
-                id="symbol"
-                name="symbol"
-                type="text"
-                placeholder="Enter a symbol"
-                autoComplete="off"
-                autoCapitalize="characters"
-                maxLength={10}
-                spellCheck={false}
-                required
-              />
-              <button type="submit" disabled={pending} aria-label="Check the open">
-                {pending ? <span className={styles.spinner} /> : "→"}
-              </button>
-            </form>
-            <p className={styles.hint}>Try AAPL, MSFT, NVDA, or AMZN</p>
+            <SymbolCombobox pending={pending} onSearch={handleSearch} />
           </section>
 
-          <section className={styles.resultRegion} aria-live="polite">
-            {pending ? <LoadingState /> : null}
-            {!pending && error ? <ErrorState message={error} /> : null}
-            {!pending && !error && quote ? <QuoteResult quote={quote} /> : null}
-            {!pending && !error && !quote ? <EmptyState /> : null}
-          </section>
+          {pending || error || quote ? (
+            <section className={styles.resultRegion} aria-live="polite">
+              {pending ? <LoadingState /> : null}
+              {!pending && error ? <ErrorState message={error} /> : null}
+              {!pending && !error && quote ? <QuoteResult quote={quote} /> : null}
+            </section>
+          ) : null}
         </div>
 
         <section className={styles.recent} aria-labelledby="recent-title">
@@ -186,6 +174,231 @@ export function Dashboard({ userName, initialRecent }: DashboardProps) {
   );
 }
 
+type SymbolComboboxProps = {
+  pending: boolean;
+  onSearch: (symbol: string) => Promise<void>;
+};
+
+function SymbolCombobox({ pending, onSearch }: SymbolComboboxProps) {
+  const listboxId = useId();
+  const [inputValue, setInputValue] = useState("");
+  const [selected, setSelected] = useState<StockSymbol | null>(null);
+  const [suggestions, setSuggestions] = useState<StockSymbol[]>([]);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  const [open, setOpen] = useState(false);
+  const [searchState, setSearchState] = useState<
+    "idle" | "loading" | "ready" | "error"
+  >("idle");
+
+  useEffect(() => {
+    const query = inputValue.trim();
+
+    if (!query || selected) {
+      return;
+    }
+
+    const cacheKey = query.toUpperCase();
+    const controller = new AbortController();
+    const timeout = window.setTimeout(async () => {
+      const cached = symbolSearchCache.get(cacheKey);
+
+      if (cached) {
+        setSuggestions(cached);
+        setHighlightedIndex(cached.length ? 0 : -1);
+        setOpen(true);
+        setSearchState("ready");
+        return;
+      }
+
+      setSearchState("loading");
+      setOpen(true);
+
+      try {
+        const response = await fetch(
+          `/api/symbols?q=${encodeURIComponent(query)}`,
+          { signal: controller.signal },
+        );
+        const payload = (await response.json()) as {
+          symbols?: StockSymbol[];
+          error?: string;
+        };
+
+        if (!response.ok || !payload.symbols) {
+          throw new Error(payload.error ?? "Symbol search is unavailable.");
+        }
+
+        symbolSearchCache.set(cacheKey, payload.symbols);
+        setSuggestions(payload.symbols);
+        setHighlightedIndex(payload.symbols.length ? 0 : -1);
+        setSearchState("ready");
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        setSuggestions([]);
+        setHighlightedIndex(-1);
+        setSearchState("error");
+      }
+    }, 250);
+
+    return () => {
+      window.clearTimeout(timeout);
+      controller.abort();
+    };
+  }, [inputValue, selected]);
+
+  function handleInputChange(event: ChangeEvent<HTMLInputElement>) {
+    setInputValue(event.target.value);
+    setSelected(null);
+    setSuggestions([]);
+    setHighlightedIndex(-1);
+    setOpen(false);
+    setSearchState("idle");
+  }
+
+  function selectSymbol(symbol: StockSymbol) {
+    setSelected(symbol);
+    setInputValue(symbol.displaySymbol);
+    setSuggestions([]);
+    setHighlightedIndex(-1);
+    setOpen(false);
+    setSearchState("idle");
+  }
+
+  function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "Escape") {
+      setOpen(false);
+      return;
+    }
+
+    if (!suggestions.length) return;
+
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setOpen(true);
+      setHighlightedIndex((current) => (current + 1) % suggestions.length);
+    }
+
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setOpen(true);
+      setHighlightedIndex((current) =>
+        current <= 0 ? suggestions.length - 1 : current - 1,
+      );
+    }
+
+    if (event.key === "Enter" && open) {
+      event.preventDefault();
+      const highlighted = suggestions[highlightedIndex];
+      if (highlighted) selectSymbol(highlighted);
+    }
+  }
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (selected && !pending) void onSearch(selected.symbol);
+  }
+
+  const activeOptionId =
+    open && highlightedIndex >= 0
+      ? `${listboxId}-option-${highlightedIndex}`
+      : undefined;
+
+  return (
+    <div className={styles.symbolPicker}>
+      <form className={styles.search} onSubmit={handleSubmit}>
+        <label className="srOnly" htmlFor="symbol">
+          Stock symbol or company
+        </label>
+        <input
+          id="symbol"
+          type="text"
+          role="combobox"
+          placeholder="Search symbol or company"
+          value={inputValue}
+          autoComplete="off"
+          autoCapitalize="characters"
+          maxLength={64}
+          spellCheck={false}
+          aria-autocomplete="list"
+          aria-controls={listboxId}
+          aria-expanded={open}
+          aria-activedescendant={activeOptionId}
+          aria-describedby="symbol-hint"
+          onChange={handleInputChange}
+          onKeyDown={handleKeyDown}
+          onFocus={() => {
+            if (suggestions.length || searchState !== "idle") setOpen(true);
+          }}
+          onBlur={() => setOpen(false)}
+        />
+        {selected ? (
+          <span className={styles.verified} aria-label="Verified symbol">
+            ✓
+          </span>
+        ) : null}
+        <button
+          type="submit"
+          disabled={pending || !selected}
+          aria-label="Check the open"
+        >
+          {pending ? <span className={styles.spinner} /> : "→"}
+        </button>
+      </form>
+
+      <div
+        id={listboxId}
+        className={`${styles.suggestions} ${open ? styles.suggestionsOpen : ""}`}
+        role="listbox"
+        aria-label="Matching US stock symbols"
+      >
+        {searchState === "loading" ? (
+          <p className={styles.suggestionState} role="status">
+            Searching listed symbols…
+          </p>
+        ) : null}
+
+        {searchState === "error" ? (
+          <p className={`${styles.suggestionState} ${styles.suggestionError}`} role="status">
+            Symbol search is unavailable. Try again.
+          </p>
+        ) : null}
+
+        {searchState === "ready" && !suggestions.length ? (
+          <p className={styles.suggestionState} role="status">
+            No matching US symbols found.
+          </p>
+        ) : null}
+
+        {suggestions.map((symbol, index) => (
+          <div
+            id={`${listboxId}-option-${index}`}
+            className={`${styles.suggestion} ${
+              index === highlightedIndex ? styles.suggestionActive : ""
+            }`}
+            key={symbol.symbol}
+            role="option"
+            aria-selected={index === highlightedIndex}
+            onMouseDown={(event) => {
+              event.preventDefault();
+              selectSymbol(symbol);
+            }}
+          >
+            <strong>{symbol.displaySymbol}</strong>
+            <span>{symbol.description}</span>
+          </div>
+        ))}
+      </div>
+
+      <p className={styles.hint} id="symbol-hint">
+        {selected
+          ? `${selected.description} · verified US listing`
+          : inputValue.trim()
+            ? "Choose a verified result to continue"
+            : "Search by ticker or company name"}
+      </p>
+    </div>
+  );
+}
+
 function QuoteResult({ quote }: { quote: DisplayQuote }) {
   return (
     <div className={styles.result}>
@@ -211,15 +424,6 @@ function QuoteResult({ quote }: { quote: DisplayQuote }) {
         <div><dt>Low</dt><dd>{formatCurrency(quote.lowPrice)}</dd></div>
         <div><dt>Previous</dt><dd>{formatCurrency(quote.previousClose)}</dd></div>
       </dl>
-    </div>
-  );
-}
-
-function EmptyState() {
-  return (
-    <div className={styles.state}>
-      <div><p>Ready when you are</p><strong>—</strong></div>
-      <span>Enter a US stock symbol to see its latest reported opening price.</span>
     </div>
   );
 }

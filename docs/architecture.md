@@ -19,19 +19,25 @@ Neon provides managed PostgreSQL.
 2. Better Auth hashes credentials and persists the user, account, and session in
    PostgreSQL.
 3. The browser receives an HTTP-only session cookie.
-4. `/dashboard` and `/api/quotes` independently validate that session on the
-   server. An anonymous page request redirects to sign-in; an anonymous API
-   request receives `401`.
+4. `/dashboard`, `/api/symbols`, and `/api/quotes` independently validate that
+   session on the server. An anonymous page request redirects to sign-in; an
+   anonymous API request receives `401`.
 
 ### Quote lookup
 
-1. The protected dashboard posts a symbol to `/api/quotes`.
-2. The server normalizes and validates the symbol before making an external call.
-3. The Finnhub adapter requests the quote with a five-second timeout and keeps
+1. The protected dashboard sends a debounced query to `/api/symbols` while the
+   user types a ticker or company name.
+2. The server searches Finnhub's US listings and returns a bounded,
+   relevance-ranked set of symbols without exposing the provider credential.
+3. The dashboard enables quote lookup only after the user selects one of those
+   verified results, then posts its canonical symbol to `/api/quotes`.
+4. The quote endpoint independently normalizes and validates the symbol before
+   making an external call, so the UI is not the security boundary.
+5. The Finnhub adapter requests the quote with a five-second timeout and keeps
    the API key server-side.
-4. A successful opening price is persisted with the authenticated user ID and
+6. A successful opening price is persisted with the authenticated user ID and
    returned to the browser.
-5. Provider throttling, missing symbols, invalid input, malformed responses, and
+7. Provider throttling, missing symbols, invalid input, malformed responses, and
    temporary failures become stable client-facing errors.
 
 ## Code boundaries

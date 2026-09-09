@@ -1,7 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { QuoteProviderError, SymbolNotFoundError } from "./errors";
-import { createFinnhubProvider } from "./finnhub";
+import {
+  createFinnhubProvider,
+  createFinnhubSymbolSearchProvider,
+} from "./finnhub";
 
 describe("Finnhub quote provider", () => {
   it("maps a successful quote response", async () => {
@@ -64,6 +67,56 @@ describe("Finnhub quote provider", () => {
 
     await expect(
       createFinnhubProvider("test-key", fetcher).getQuote("AAPL"),
+    ).rejects.toBeInstanceOf(QuoteProviderError);
+  });
+});
+
+describe("Finnhub symbol search provider", () => {
+  it("returns a bounded, deduplicated list of US symbol matches", async () => {
+    const results = Array.from({ length: 9 }, (_, index) => ({
+      description:
+        index === 0
+          ? "APPLE ISPORTS GROUP INC"
+          : index === 1
+            ? "APPLE INC"
+            : `MATCH ${index} WITH APPLE`,
+      displaySymbol:
+        index === 0 ? "AAPI" : index === 1 ? "AAPL" : `ZZZ${index}`,
+      symbol:
+        index === 0 ? "AAPI" : index === 1 ? "AAPL" : `ZZZ${index}`,
+      type: "Common Stock",
+    }));
+    results.splice(2, 0, { ...results[1] });
+
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(
+      Response.json({ count: results.length, result: results }),
+    );
+
+    const provider = createFinnhubSymbolSearchProvider("test-key", fetcher);
+    const symbols = await provider.search("apple");
+
+    expect(symbols).toHaveLength(8);
+    expect(symbols[0]).toEqual({
+      description: "APPLE INC",
+      displaySymbol: "AAPL",
+      symbol: "AAPL",
+    });
+
+    const requestUrl = String(fetcher.mock.calls[0]?.[0]);
+    expect(requestUrl).toContain("q=apple");
+    expect(requestUrl).toContain("exchange=US");
+    expect(fetcher.mock.calls[0]?.[1]?.headers).toEqual({
+      "X-Finnhub-Token": "test-key",
+    });
+  });
+
+  it("translates malformed search responses into a domain error", async () => {
+    const fetcher = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(Response.json({ result: "not-an-array" }));
+
+    await expect(
+      createFinnhubSymbolSearchProvider("test-key", fetcher).search("apple"),
     ).rejects.toBeInstanceOf(QuoteProviderError);
   });
 });

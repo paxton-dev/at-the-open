@@ -13,7 +13,9 @@ test("a user can sign up, search, log out, and log back in", async ({ page }) =>
     await page.getByRole("button", { name: "Create your account" }).click();
 
     await expect(page).toHaveURL(/\/dashboard$/);
-    await page.getByLabel("Stock symbol").fill("aapl");
+    await page.getByLabel("Stock symbol or company").fill("apple");
+    await page.getByRole("option", { name: /AAPL APPLE INC/i }).click();
+    await expect(page.getByLabel("Verified symbol")).toBeVisible();
     await page.getByRole("button", { name: "Check the open" }).click();
 
     await expect(page.getByRole("heading", { name: "AAPL" })).toBeVisible();

@@ -1,4 +1,8 @@
-import type { StockQuoteProvider } from "./types";
+import type {
+  StockQuoteProvider,
+  StockSymbol,
+  StockSymbolSearchProvider,
+} from "./types";
 
 const prices = {
   AAPL: { open: 231.42, current: 234.08, high: 235.1, low: 229.3, previous: 230.17 },
@@ -27,5 +31,24 @@ export const testQuoteProvider: StockQuoteProvider = {
       provider: "test",
       providerTimestamp: new Date("2026-09-02T20:00:00.000Z"),
     };
+  },
+};
+
+const symbols: StockSymbol[] = [
+  { symbol: "AAPL", displaySymbol: "AAPL", description: "APPLE INC" },
+  { symbol: "AMZN", displaySymbol: "AMZN", description: "AMAZON.COM INC" },
+  { symbol: "MSFT", displaySymbol: "MSFT", description: "MICROSOFT CORP" },
+  { symbol: "NVDA", displaySymbol: "NVDA", description: "NVIDIA CORP" },
+];
+
+export const testSymbolSearchProvider: StockSymbolSearchProvider = {
+  async search(query) {
+    const normalized = query.trim().toUpperCase();
+
+    return symbols.filter(
+      (symbol) =>
+        symbol.symbol.includes(normalized) ||
+        symbol.description.includes(normalized),
+    );
   },
 };

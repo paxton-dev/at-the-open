@@ -1,6 +1,6 @@
 # At The Open
 
-At The Open gives authenticated users one clear answer: the latest reported
+At The Open gives authenticated users the latest reported
 opening price for a US stock. Successful lookups are saved to each user's
 private search history.
 
@@ -14,7 +14,8 @@ infrastructure as code.
 - Email/password sign-up, sign-in, session handling, and sign-out with Better Auth
 - Protected page and API access enforced on the server
 - PostgreSQL persistence through Drizzle ORM and versioned SQL migrations
-- Server-only Finnhub integration with input validation and typed error handling
+- Server-only Finnhub quote and US-symbol search integration with typed errors
+- Verified typeahead selection that prevents arbitrary symbols from being submitted
 - Responsive, accessible UI with loading, empty, success, and failure states
 - Unit and Playwright tests, including the complete reviewer happy path
 - Repeatable AWS deployment with SST, Lambda, S3, and CloudFront
@@ -26,7 +27,7 @@ infrastructure as code.
 | Application | Next.js 16 + React 19 + TypeScript |
 | Authentication | Better Auth with database-backed sessions |
 | Database | PostgreSQL (Neon in production) + Drizzle ORM |
-| Market data | Finnhub quote API, called only from the server |
+| Market data | Finnhub quote API |
 | Hosting | AWS via SST: CloudFront, S3, and Lambda |
 | Production URL | `https://open.jamespaxton.io` |
 | Tests | Vitest for domain code; Playwright for the full user journey |
@@ -111,6 +112,35 @@ runtime and never embedded in the browser bundle.
 | `npm run test:watch` | Run unit tests interactively |
 | `npm run deploy:aws` | Deploy the production SST stage |
 
+## Future iterations
+
+### Product capabilities
+
+- Add verified-email password recovery and authenticated password changes.
+- Let users delete individual recent searches or clear their full history with
+  confirmation.
+- Compare opening prices and session metrics for multiple symbols in one view.
+- Add historical opening-price trends with accessible chart and table views.
+- Let users create watchlists and pin frequently researched symbols.
+- Add market context such as the opening gap versus previous close, session date,
+  exchange, and data-freshness indicators.
+- Support configurable email alerts or digests for opening-price changes over
+  time, with pause and unsubscribe controls.
+- Export a user's search history or comparison results as CSV.
+
+### Platform evolution
+
+- Add email verification, active-session management, account deletion, and data
+  export controls.
+- Introduce bounded provider caching, per-user quotas, retries, and circuit
+  breaking as traffic grows.
+- Run alert evaluation as an idempotent scheduled workflow with delivery history,
+  retry handling, and duplicate suppression.
+- Add structured metrics, traces, provider-latency dashboards, and availability
+  alerts around authentication, quote lookup, and notification delivery.
+- Expand browser coverage for keyboard-only autocomplete, mobile layouts,
+  destructive-action confirmation, and accessible chart alternatives.
+
 ## Scope decisions
 
 Search history is the one small extension beyond the prompt. It makes database
@@ -118,5 +148,18 @@ use visible to a reviewer and proves records are scoped to the signed-in user.
 Password reset, email verification, social login, and streaming prices are
 deliberately left out: they add operational surface without strengthening the
 exercise's core signal.
+
+## Generative AI disclosure
+
+Generative AI was used as a collaborative tool for:
+
+- Product brainstorming and early page-structure/scaffolding ideas
+- Visual design exploration, copy, and CSS iteration
+- Drafting and expanding unit tests
+- Drafting project documentation
+
+All generated material was reviewed, edited, and validated as part of the final
+implementation. The project owner remains responsible for the architecture,
+code, security decisions, and deployed application.
 
 Market data is informational, may be delayed, and is not investment advice.

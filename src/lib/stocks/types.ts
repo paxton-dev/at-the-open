@@ -18,8 +18,18 @@ export type QuoteSearchRecord = Pick<
   searchedAt: Date;
 };
 
+export type StockSymbol = {
+  symbol: string;
+  displaySymbol: string;
+  description: string;
+};
+
 export interface StockQuoteProvider {
   getQuote(symbol: string): Promise<StockQuote>;
+}
+
+export interface StockSymbolSearchProvider {
+  search(query: string): Promise<StockSymbol[]>;
 }
 
 export interface QuoteSearchRepository {
