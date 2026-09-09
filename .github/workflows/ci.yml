@@ -15,6 +15,7 @@ jobs:
     timeout-minutes: 15
     env:
       DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/at_the_open
+      DATABASE_DRIVER: pg
       BETTER_AUTH_SECRET: ci-secret-at-least-thirty-two-characters-long
       BETTER_AUTH_URL: http://localhost:3000
       MARKET_DATA_MODE: test

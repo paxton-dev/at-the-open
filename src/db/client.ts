@@ -1,17 +1,34 @@
-import { Pool, neonConfig } from "@neondatabase/serverless";
-import { drizzle } from "drizzle-orm/neon-serverless";
+import { Pool as NeonPool, neonConfig } from "@neondatabase/serverless";
+import { drizzle as neonDrizzle } from "drizzle-orm/neon-serverless";
+import { drizzle as nodePostgresDrizzle } from "drizzle-orm/node-postgres";
+import pg from "pg";
 import ws from "ws";
 
 import * as schema from "@/db/schema";
 import { config } from "@/lib/config";
 
-neonConfig.webSocketConstructor = ws;
+function createDatabase() {
+  if (process.env.DATABASE_DRIVER === "pg") {
+    const pool = new pg.Pool({
+      connectionString: config.databaseUrl,
+      max: 2,
+      idleTimeoutMillis: 30_000,
+      connectionTimeoutMillis: 5_000,
+    });
 
-export const pool = new Pool({
-  connectionString: config.databaseUrl,
-  max: 2,
-  idleTimeoutMillis: 30_000,
-  connectionTimeoutMillis: 5_000,
-});
+    return nodePostgresDrizzle({ client: pool, schema });
+  }
 
-export const db = drizzle({ client: pool, schema });
+  neonConfig.webSocketConstructor = ws;
+
+  const pool = new NeonPool({
+    connectionString: config.databaseUrl,
+    max: 2,
+    idleTimeoutMillis: 30_000,
+    connectionTimeoutMillis: 5_000,
+  });
+
+  return neonDrizzle({ client: pool, schema });
+}
+
+export const db = createDatabase();

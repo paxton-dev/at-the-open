@@ -1,5 +1,5 @@
-import { neon } from "@neondatabase/serverless";
 import { expect, test } from "@playwright/test";
+import pg from "pg";
 
 test("a user can sign up, search, log out, and log back in", async ({ page }) => {
   const email = `reviewer-${Date.now()}@example.com`;
@@ -39,8 +39,12 @@ test("a user can sign up, search, log out, and log back in", async ({ page }) =>
   } finally {
     const databaseUrl = process.env.DATABASE_URL;
     if (databaseUrl) {
-      const sql = neon(databaseUrl);
-      await sql`delete from "user" where email = ${email}`;
+      const pool = new pg.Pool({ connectionString: databaseUrl, max: 1 });
+      try {
+        await pool.query('delete from "user" where email = $1', [email]);
+      } finally {
+        await pool.end();
+      }
     }
   }
 });
